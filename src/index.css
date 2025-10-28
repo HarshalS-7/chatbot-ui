@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  line-height: 1.5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #fafaf9
+}
+
+body{
+  /* font-family: "Rubik"; */
+  /* font-family: "Inter"; */
+  font-family: "Poppins";
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
