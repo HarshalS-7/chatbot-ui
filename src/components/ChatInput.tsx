@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch, RootState } from '../store';
-import { addMessage, type Message } from '../features/chat/chatSlice';
-import { v4 as uuidv4 } from 'uuid';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../store';
 import { ArrowRightCircle, AudioLines, UploadIcon } from 'lucide-react';
 import { selectAuth } from '../features/auth/userSlice';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import VoiceInput from './VoiceInput';
 
 function ChatInput({ onSend }: any) {
-  const dispatch = useDispatch<AppDispatch>()
-  const messages = useSelector((state: RootState) => state.chat.messages);
+  const { id } = useParams()
+  const messages = useSelector((state: RootState) => state.chat.conversations.find(c => c.id === id || c.id === state.chat.activeConversationId)?.messages || []);
   const { isAuthenticated } = useSelector(selectAuth)
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false)
@@ -17,6 +16,7 @@ function ChatInput({ onSend }: any) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   const [value, setValue] = useState('');
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -49,19 +49,9 @@ function ChatInput({ onSend }: any) {
     }
 
     const text = value.trim();
-    const newMessage: Message = { id: uuidv4(), text, sender: 'user' };
-    const updatedMessage = [...messages, newMessage];
-    dispatch(addMessage(newMessage));
     setValue('');
-
-    try {
-      console.log('--newly added: ', updatedMessage)
-      await onSend(updatedMessage);
-    } catch (err) {
-      console.error('send failed', err);
-    } finally {
-      setLoading(false);
-    }
+    await onSend(text);
+    setLoading(false);
   }
 
   function handleUpload() {
@@ -69,16 +59,36 @@ function ChatInput({ onSend }: any) {
   }
 
   function handleVoiceMessage() {
-    console.log('Voice button clicked');
+    setShowVoiceInput((prev) => !prev);
   }
 
+  const handleSendVoice = async (file: File) => {
+    console.log('Uploading voice file:', file);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    await fetch('http://localhost:8000/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    setShowVoiceInput(false);
+  };
+
   return (
-    <div className={`
-      ${messages.length === 0 ? 'flex justify-center items-center h-[45rem] w-full mx-auto p-5 px-2 bg-[#fafaf9]'
-        : 'fixed bottom-0 right-0 w-full mx-auto p-5 px-2 pl-64 bg-[#fafaf9]'
-      }`}>
-      <form onSubmit={submit} className="flex justify-center items-center gap-4 pt-0 w-full">
-        <div className='flex flex-col gap-0 border border-stone-300 bg-stone-100 rounded-xl'>
+    <div
+      className={`${
+        messages.length === 0
+          ? 'flex justify-center items-center h-[45rem] w-full mx-auto p-5 px-2 bg-[#fafaf9]'
+          : 'fixed bottom-0 right-0 w-full mx-auto p-5 px-2 pl-64 bg-[#fafaf9]'
+      }`}
+    >
+      <form
+        onSubmit={submit}
+        className="flex justify-center items-center gap-4 pt-0 w-full"
+      >
+        <div className="flex flex-col gap-0 border border-stone-300 bg-stone-100 rounded-xl w-5xl">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -91,12 +101,12 @@ function ChatInput({ onSend }: any) {
                 submit();
               }
             }}
-            className="rounded-xl px-4 py-3 flex justify-center w-4xl 
+            className="rounded-xl px-4 py-3 flex justify-center 
           focus:outline-none resize-none
           overflow-hidden min-h-10 max-h-40 transition-all duration-75"
           />
 
-          <div className='flex items-center justify-between px-4 py-2 text-stone-700'>
+          <div className='flex items-center justify-between px-4 py-2   '>
             <div className='flex items-center gap-2'>
               <button type='button' onClick={handleUpload} className='flex items-center gap-2 cursor-pointer border border-stone-300 px-2.5 py-1 rounded-full hover:bg-stone-200'>
                 <UploadIcon color='#44403b ' className='w-4 h-4 cursor-pointer' />
@@ -104,7 +114,7 @@ function ChatInput({ onSend }: any) {
               </button>
               <button type='button' onClick={handleVoiceMessage} className='flex items-center gap-2 cursor-pointer border border-stone-300 px-2.5 py-1 rounded-full hover:bg-stone-200'>
                 <AudioLines color='#44403b ' className='w-4 h-4 cursor-pointer' />
-                <div>Voive</div>
+                <div>Voice</div>
               </button>
             </div>
 
@@ -113,16 +123,24 @@ function ChatInput({ onSend }: any) {
               disabled={loading || value.trim() === ''}
               className="flex items-center border-stone-300 bg-black rounded-full cursor-pointer disabled:opacity-50"
             >
-              <ArrowRightCircle color='#f5f5f4' strokeWidth={1} className='w-8 h-8' />
+              <ArrowRightCircle
+                color="#f5f5f4"
+                strokeWidth={1}
+                className="w-8 h-8"
+              />
             </button>
-
           </div>
         </div>
-
-
       </form>
+
+      {showVoiceInput && (
+        <VoiceInput
+          onSend={handleSendVoice}
+          onClose={() => setShowVoiceInput(false)}
+        />
+      )}
     </div>
-  )
+  );
 }
 
-export default ChatInput
+export default ChatInput;

@@ -4,13 +4,20 @@ import { useNavigate } from "react-router-dom";
 import { selectAuth, logout } from "../features/auth/userSlice";
 import type { AppDispatch, RootState } from "../store";
 import axios from "axios";
+import { useEffect } from "react";
 
 function Sidebar() {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   const { isAuthenticated } = useSelector(selectAuth)
-  const messages = useSelector((state: RootState) => state.chat.messages);
+  const conversations = useSelector((state: RootState) => state.chat.conversations);
 
+
+  useEffect(() => {
+    console.log('---conversation: ',conversations)
+  }, [conversations])
+  
+  
   function handleLogin() {
     navigate('/login');
     console.log("Login button clicked");
@@ -36,6 +43,11 @@ function Sidebar() {
     navigate('/')
   }
 
+  function handleConversation(convo: any){
+    console.log('----convo:',convo)
+    navigate(`chat/${convo.id}`)
+  }
+
   return (
     <div className="fixed top-0 left-0 py-4 px-2 w-64 min-h-screen items-start gap-2 flex flex-col bg-stone-100 border-r border-stone-200 z-10">
       <div className="flex gap-2 w-full items-center px-2 mb-4">
@@ -51,6 +63,23 @@ function Sidebar() {
           New Chat
         </div>
       </div>
+
+      {/* HISTORY SECTION  */}
+      {conversations.length > 0 && (
+        <div className="flex flex-col items-start gap-4 p-2">
+          <div className="text-stone-700">
+            History
+          </div>
+
+          <div className="flex flex-col items-start gap-4 text-start">
+            {conversations.map((convo) => (
+              <button onClick={() => handleConversation(convo)} key={convo.id} className="flex gap-1 items-center cursor-pointer">
+                {convo.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
 
       {/* AUTH SECTION */}
